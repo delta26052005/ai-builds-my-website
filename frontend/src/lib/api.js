@@ -66,8 +66,12 @@ async function request(path, { method = 'GET', body } = {}) {
   }
 
   if (body !== undefined) {
-    headers.set('Content-Type', 'application/json')
-    options.body = JSON.stringify(body)
+    if (body instanceof FormData) {
+      options.body = body
+    } else {
+      headers.set('Content-Type', 'application/json')
+      options.body = JSON.stringify(body)
+    }
   }
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())) {
@@ -81,6 +85,10 @@ async function request(path, { method = 'GET', body } = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, options)
 
   if (!response.ok) {
+    if (response.status === 401) {
+      window.dispatchEvent(new Event('api:unauthorized'))
+    }
+
     throw await responseError(response)
   }
 
@@ -101,4 +109,35 @@ export const api = {
     method: 'POST',
     body: {},
   }),
+  listProjects: (page = 1) => request(`/projects?page=${page}`),
+  createProject: async (project) => (await request('/projects', {
+    method: 'POST',
+    body: project,
+  })).data,
+  getProject: async (projectId) => (await request(`/projects/${projectId}`)).data,
+  updateProject: async (projectId, project) => (await request(`/projects/${projectId}`, {
+    method: 'PATCH',
+    body: project,
+  })).data,
+  deleteProject: (projectId) => request(`/projects/${projectId}`, {
+    method: 'DELETE',
+  }),
+  listProjectSources: async (projectId) => (await request(`/projects/${projectId}/sources`)).data,
+  uploadProjectSources: (projectId, files) => {
+    const body = new FormData()
+
+    files.forEach(({ file, sourceType }) => {
+      body.append('files[]', file)
+      body.append('source_types[]', sourceType)
+    })
+
+    return request(`/projects/${projectId}/sources`, {
+      method: 'POST',
+      body,
+    })
+  },
+  deleteProjectSource: (projectId, sourceId) => request(
+    `/projects/${projectId}/sources/${sourceId}`,
+    { method: 'DELETE' },
+  ),
 }

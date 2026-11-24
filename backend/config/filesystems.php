@@ -38,6 +38,14 @@ return [
             'report' => false,
         ],
 
+        'project_sources' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/project-sources'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

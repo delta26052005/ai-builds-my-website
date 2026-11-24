@@ -59,6 +59,17 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  useEffect(() => {
+    function handleUnauthorized() {
+      setUser(null)
+      setAuthError('')
+    }
+
+    window.addEventListener('api:unauthorized', handleUnauthorized)
+
+    return () => window.removeEventListener('api:unauthorized', handleUnauthorized)
+  }, [])
+
   const login = useCallback(async (credentials) => {
     setAuthError('')
     await getCsrfCookie()

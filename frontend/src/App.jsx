@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import AuthPage from './auth/AuthPage.jsx'
 import { AuthProvider } from './auth/AuthProvider.jsx'
 import { useAuth } from './auth/useAuth.js'
+import ProjectDashboard from './projects/ProjectDashboard.jsx'
+import ProjectDetailsPage from './projects/ProjectDetailsPage.jsx'
+import ProjectFormPage from './projects/ProjectFormPage.jsx'
 import './App.css'
 
 function navigate(path) {
@@ -49,76 +52,23 @@ function SessionError({ onRetry }) {
   )
 }
 
-function Workspace({ user }) {
-  const { logout } = useAuth()
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [error, setError] = useState('')
-
-  async function handleLogout() {
-    setError('')
-    setIsLoggingOut(true)
-
-    try {
-      await logout()
-      navigate('/login')
-    } catch {
-      setError('We couldn’t sign you out. Please try again.')
-    } finally {
-      setIsLoggingOut(false)
-    }
-  }
-
-  return (
-    <main className="workspace">
-      <header className="workspace-header">
-        <a className="wordmark" href="/app" onClick={(event) => {
-          event.preventDefault()
-          navigate('/app')
-        }}>
-          <span className="wordmark-mark" aria-hidden="true">A</span>
-          <span>AI Builds My Website</span>
-        </a>
-        <button className="button button-quiet" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-          {isLoggingOut ? 'Signing out…' : 'Sign out'}
-        </button>
-      </header>
-      <section className="workspace-content">
-        <div className="workspace-eyebrow"><span className="status-dot" /> Account connected</div>
-        <h1>Welcome, {user.name.split(' ')[0]}.</h1>
-        <p className="workspace-intro">Your account is ready. Your website-building workspace will be waiting here.</p>
-        <div className="account-card">
-          <div className="account-avatar" aria-hidden="true">{user.name.charAt(0).toUpperCase()}</div>
-          <div>
-            <p className="account-label">Signed in as</p>
-            <p className="account-email">{user.email}</p>
-          </div>
-          <span className="account-check" aria-label="Authenticated">✓</span>
-        </div>
-        {error && <p className="form-alert form-alert-error" role="alert">{error}</p>}
-      </section>
-      <footer className="workspace-footer">A simpler way to bring your ideas online.</footer>
-    </main>
-  )
-}
-
 function RoutedApp() {
   const pathname = usePathname()
   const { user, loading, authError, refreshUser } = useAuth()
+  const projectEdit = pathname.match(/^\/projects\/(\d+)\/edit$/)
+  const projectDetails = pathname.match(/^\/projects\/(\d+)$/)
+  const isProtectedPath = pathname === '/app' || pathname.startsWith('/projects/')
 
   if (loading) {
     return <LoadingScreen />
   }
 
-  if (pathname === '/app') {
-    if (authError) {
-      return <SessionError onRetry={refreshUser} />
-    }
+  if (isProtectedPath && authError) {
+    return <SessionError onRetry={refreshUser} />
+  }
 
-    if (!user) {
-      return <Redirect to="/login" />
-    }
-
-    return <Workspace user={user} />
+  if (isProtectedPath && !user) {
+    return <Redirect to="/login" />
   }
 
   if (pathname === '/login' || pathname === '/register') {
@@ -133,6 +83,22 @@ function RoutedApp() {
         startupError={authError}
       />
     )
+  }
+
+  if (pathname === '/app') {
+    return <ProjectDashboard user={user} onNavigate={navigate} />
+  }
+
+  if (pathname === '/projects/new') {
+    return <ProjectFormPage user={user} onNavigate={navigate} />
+  }
+
+  if (projectEdit) {
+    return <ProjectFormPage projectId={projectEdit[1]} user={user} onNavigate={navigate} />
+  }
+
+  if (projectDetails) {
+    return <ProjectDetailsPage projectId={projectDetails[1]} user={user} onNavigate={navigate} />
   }
 
   return <Redirect to={user ? '/app' : '/login'} />
