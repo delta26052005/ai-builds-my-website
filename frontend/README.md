@@ -1,16 +1,40 @@
-# React + Vite
+# AI Builds My Website frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Run locally
 
-Currently, two official plugins are available:
+Use the same hostname for the frontend and API. The example configuration uses
+`localhost` for both:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```powershell
+# Terminal 1, from the monorepo root
+cd backend
+php artisan migrate
+php artisan serve --host=localhost --port=8000
 
-## React Compiler
+# Terminal 2, from the monorepo root
+cd frontend
+Copy-Item .env.example .env
+npm install
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The Vite server runs at `http://localhost:5174`. The frontend API URL is set by
+`VITE_API_BASE_URL` in the frontend `.env` file. This value is public and must
+only contain the API base URL; never put credentials or secrets in a `VITE_`
+variable.
 
-## Expanding the ESLint configuration
+To use `127.0.0.1` instead, set
+`VITE_API_BASE_URL=http://127.0.0.1:8000/api` and open the frontend at
+`http://127.0.0.1:5174`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Authentication uses Laravel Sanctum session cookies. The frontend obtains a
+CSRF cookie before login or registration and sends requests with credentials;
+it does not store authentication tokens in browser storage.
+
+## Production configuration
+
+Use HTTPS for both applications. Configure the backend's
+`CORS_ALLOWED_ORIGINS` and `SANCTUM_STATEFUL_DOMAINS` with the exact deployed
+frontend origin and hostname. When frontend and API use subdomains, set
+`SESSION_DOMAIN` to their shared parent domain. Production session cookies are
+Secure and HttpOnly by default.
