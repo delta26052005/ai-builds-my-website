@@ -140,4 +140,11 @@ export const api = {
     `/projects/${projectId}/sources/${sourceId}`,
     { method: 'DELETE' },
   ),
+  processProjectSource: (projectId, sourceId) => request(
+    `/projects/${projectId}/sources/${sourceId}/process`,
+    { method: 'POST', body: {} },
+  ),
+  getProjectSourceContent: async (projectId, sourceId) => (await request(
+    `/projects/${projectId}/sources/${sourceId}/extraction/content`,
+  )).data,
 }

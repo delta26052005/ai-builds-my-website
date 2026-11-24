@@ -1024,6 +1024,93 @@
   font-size: 11px;
 }
 
+.source-item {
+  display: grid;
+  gap: 8px;
+}
+
+.source-status-completed {
+  color: #43856a;
+}
+
+.source-status-uploaded {
+  color: #858d9b;
+}
+
+.source-status-processing,
+.source-status-pending {
+  color: #737da9;
+}
+
+.source-status-failed {
+  color: #a54953;
+}
+
+.source-extraction {
+  display: grid;
+  gap: 7px;
+  margin-left: 45px;
+  padding: 2px 3px 12px;
+  color: #858d9b;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.source-extraction p {
+  margin: 0;
+}
+
+.source-preview-note {
+  color: #737b8c;
+  font-weight: 600;
+}
+
+.source-text-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #697183;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.source-extraction-error {
+  color: #a54953;
+}
+
+.source-text-toggle {
+  justify-self: start;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #5968cc;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.source-text-toggle:disabled {
+  color: #9299a6;
+  cursor: wait;
+}
+
+.source-full-text {
+  max-height: 360px;
+  overflow: auto;
+  margin: 2px 0 0;
+  padding: 12px;
+  border: 1px solid #edf0f4;
+  border-radius: 7px;
+  background: #fafbfe;
+  color: #586173;
+  font-family: inherit;
+  font-size: 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 940px) {
   .project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1128,6 +1215,7 @@
 
   .project-selected-files .source-row,
   .source-row {
+    flex-wrap: wrap;
     gap: 8px;
     padding: 9px;
   }
@@ -1136,8 +1224,9 @@
     width: 95px;
   }
 
-  .source-processing-status {
-    display: none;
+  .source-extraction {
+    margin-left: 0;
+    padding-left: 2px;
   }
 
   .projects-list-heading {

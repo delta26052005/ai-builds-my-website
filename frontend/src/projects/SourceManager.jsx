@@ -31,8 +31,16 @@ function SourceManager({ projectId }) {
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [retryingId, setRetryingId] = useState(null)
+  const [loadingTextId, setLoadingTextId] = useState(null)
+  const [expandedTextId, setExpandedTextId] = useState(null)
+  const [textBySource, setTextBySource] = useState({})
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+
+  const hasPendingSources = sources.some((source) => (
+    ['pending', 'processing'].includes(source.extraction?.status)
+  ))
 
   useEffect(() => {
     let active = true
@@ -60,6 +68,24 @@ function SourceManager({ projectId }) {
       active = false
     }
   }, [projectId])
+
+  useEffect(() => {
+    if (!hasPendingSources) {
+      return undefined
+    }
+
+    const intervalId = window.setInterval(() => {
+      api.listProjectSources(projectId)
+        .then(setSources)
+        .catch((requestError) => {
+          setError(requestError instanceof ApiError
+            ? requestError.message
+            : 'We couldn’t refresh document processing status.')
+        })
+    }, 3000)
+
+    return () => window.clearInterval(intervalId)
+  }, [hasPendingSources, projectId])
 
   function chooseFiles(event) {
     const incoming = Array.from(event.target.files || [])
@@ -123,6 +149,11 @@ function SourceManager({ projectId }) {
     try {
       await api.deleteProjectSource(projectId, source.id)
       setSources((current) => current.filter((item) => item.id !== source.id))
+      setTextBySource((current) => {
+        const next = { ...current }
+        delete next[source.id]
+        return next
+      })
       setNotice('The uploaded file was removed.')
     } catch (requestError) {
       setError(requestError instanceof ApiError
@@ -130,6 +161,56 @@ function SourceManager({ projectId }) {
         : 'We couldn’t remove this file. Please try again.')
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  async function retryProcessing(source) {
+    setRetryingId(source.id)
+    setError('')
+    setNotice('')
+
+    try {
+      const response = await api.processProjectSource(projectId, source.id)
+      setSources((current) => current.map((item) => (
+        item.id === source.id
+          ? { ...item, processing_status: response.data.status, extraction: response.data }
+          : item
+      )))
+      setNotice('Document processing has been queued.')
+    } catch (requestError) {
+      setError(requestError instanceof ApiError
+        ? requestError.message
+        : 'We couldn’t retry document processing.')
+    } finally {
+      setRetryingId(null)
+    }
+  }
+
+  async function toggleFullText(source) {
+    if (expandedTextId === source.id) {
+      setExpandedTextId(null)
+      return
+    }
+
+    setExpandedTextId(source.id)
+
+    if (Object.hasOwn(textBySource, source.id)) {
+      return
+    }
+
+    setLoadingTextId(source.id)
+    setError('')
+
+    try {
+      const result = await api.getProjectSourceContent(projectId, source.id)
+      setTextBySource((current) => ({ ...current, [source.id]: result.extracted_text }))
+    } catch (requestError) {
+      setExpandedTextId(null)
+      setError(requestError instanceof ApiError
+        ? requestError.message
+        : 'We couldn’t load the extracted text.')
+    } finally {
+      setLoadingTextId(null)
     }
   }
 
@@ -200,27 +281,100 @@ function SourceManager({ projectId }) {
         </div>
       ) : (
         <div className="source-list">
-          {sources.map((source) => (
-            <div className="source-row" key={source.id}>
-              <span className={`source-file-icon ${source.mime_type === 'application/pdf' ? 'source-pdf' : 'source-image'}`} aria-hidden="true">
-                {source.mime_type === 'application/pdf' ? 'PDF' : 'IMG'}
-              </span>
-              <div className="source-file-info">
-                <strong>{source.original_filename}</strong>
-                <span>{readableSize(source.file_size)} · {source.source_type.replace('_', ' ')}</span>
-              </div>
-              <span className="source-processing-status">{source.processing_status}</span>
-              <button
-                type="button"
-                className="source-remove"
-                aria-label={`Delete ${source.original_filename}`}
-                disabled={deletingId === source.id}
-                onClick={() => removeSource(source)}
-              >
-                {deletingId === source.id ? '…' : '×'}
-              </button>
-            </div>
-          ))}
+          {sources.map((source) => {
+            const extraction = source.extraction
+            const status = extraction?.status
+              || (source.processing_status === 'pending' ? 'uploaded' : source.processing_status || 'uploaded')
+            const statusLabels = {
+              uploaded: 'Uploaded',
+              pending: 'Pending',
+              processing: 'Processing',
+              completed: 'Completed',
+              failed: 'Failed',
+              awaiting_ocr: 'Awaiting OCR',
+              awaiting_vision: 'Awaiting vision',
+            }
+
+            return (
+              <article className="source-item" key={source.id}>
+                <div className="source-row">
+                  <span className={`source-file-icon ${source.mime_type === 'application/pdf' ? 'source-pdf' : 'source-image'}`} aria-hidden="true">
+                    {source.mime_type === 'application/pdf' ? 'PDF' : 'IMG'}
+                  </span>
+                  <div className="source-file-info">
+                    <strong>{source.original_filename}</strong>
+                    <span>
+                      {readableSize(source.file_size)} · {source.source_type.replace('_', ' ')} ·{' '}
+                      {new Date(source.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <span className={`source-processing-status source-status-${status}`}>
+                    {statusLabels[status] || status}
+                  </span>
+                  <button
+                    type="button"
+                    className="source-remove"
+                    aria-label={`Delete ${source.original_filename}`}
+                    disabled={deletingId === source.id}
+                    onClick={() => removeSource(source)}
+                  >
+                    {deletingId === source.id ? '…' : '×'}
+                  </button>
+                </div>
+
+                {extraction && (
+                  <div className="source-extraction">
+                    {extraction.extraction_method && (
+                      <span>
+                        Method: {extraction.extraction_method}
+                        {extraction.page_count ? ` · ${extraction.page_count} ${extraction.page_count === 1 ? 'page' : 'pages'}` : ''}
+                      </span>
+                    )}
+                    {extraction.error_message && (
+                      <p className={status === 'failed' ? 'source-extraction-error' : ''}>
+                        {extraction.error_message}
+                      </p>
+                    )}
+                    {status === 'completed' && (
+                      <>
+                        <p className="source-preview-note">Extracted text preview · Document content is unverified.</p>
+                        <p className="source-text-preview">{extraction.text_preview}</p>
+                        <button
+                          type="button"
+                          className="source-text-toggle"
+                          disabled={loadingTextId === source.id}
+                          onClick={() => toggleFullText(source)}
+                        >
+                          {loadingTextId === source.id
+                            ? 'Loading text…'
+                            : expandedTextId === source.id
+                              ? 'Hide full text'
+                              : 'View full text'}
+                        </button>
+                        {expandedTextId === source.id && Object.hasOwn(textBySource, source.id) && (
+                          <pre className="source-full-text">{textBySource[source.id]}</pre>
+                        )}
+                      </>
+                    )}
+                    {['failed', 'uploaded'].includes(status) && (
+                      <button
+                        type="button"
+                        className="source-text-toggle"
+                        disabled={retryingId === source.id}
+                        onClick={() => retryProcessing(source)}
+                      >
+                        {retryingId === source.id
+                          ? 'Starting…'
+                          : status === 'uploaded'
+                            ? 'Start processing'
+                            : 'Retry processing'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </article>
+            )
+          })}
         </div>
       )}
     </section>

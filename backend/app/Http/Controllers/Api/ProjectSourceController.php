@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Api\StoreProjectSourcesRequest;
 use App\Http\Resources\Api\ProjectSourceResource;
+use App\Jobs\ProcessProjectSource;
 use App\Models\ProjectSource;
 use App\Models\WebsiteProject;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,7 @@ class ProjectSourceController
         Gate::authorize('view', $project);
 
         return ProjectSourceResource::collection(
-            $project->sources()->latest()->get(),
+            $project->sources()->with('extraction')->latest()->get(),
         );
     }
 
@@ -78,6 +79,9 @@ class ProjectSourceController
                         'source_type' => $sourceTypes[$index]
                             ?? ($file->getMimeType() === 'application/pdf' ? 'pdf' : 'image'),
                     ]);
+                    $sources[array_key_last($sources)]->extraction()->create([
+                        'status' => 'pending',
+                    ]);
                 }
 
                 return $sources;
@@ -94,7 +98,26 @@ class ProjectSourceController
             throw $exception;
         }
 
-        return ProjectSourceResource::collection($sources)
+        foreach ($sources as $source) {
+            try {
+                $source->extraction()->update(['queued_at' => now()]);
+                ProcessProjectSource::dispatch($source->id);
+            } catch (Throwable $exception) {
+                report($exception);
+                $source->extraction()->update([
+                    'status' => 'failed',
+                    'queued_at' => null,
+                    'error_code' => 'queue_unavailable',
+                    'error_message' => 'Processing could not be queued. Please try again.',
+                    'processed_at' => now(),
+                ]);
+                $source->update(['processing_status' => 'failed']);
+            }
+        }
+
+        return ProjectSourceResource::collection(
+            collect($sources)->map(fn (ProjectSource $source) => $source->load('extraction')),
+        )
             ->response()
             ->setStatusCode(201);
     }

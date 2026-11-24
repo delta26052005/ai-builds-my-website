@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ProjectSource extends Model
 {
@@ -22,5 +23,13 @@ class ProjectSource extends Model
     public function websiteProject(): BelongsTo
     {
         return $this->belongsTo(WebsiteProject::class);
+    }
+
+    /**
+     * @return HasOne<SourceExtraction, $this>
+     */
+    public function extraction(): HasOne
+    {
+        return $this->hasOne(SourceExtraction::class);
     }
 }
