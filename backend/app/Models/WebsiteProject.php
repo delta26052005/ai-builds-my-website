@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class WebsiteProject extends Model
 {
@@ -46,5 +47,37 @@ class WebsiteProject extends Model
     public function sources(): HasMany
     {
         return $this->hasMany(ProjectSource::class);
+    }
+
+    /**
+     * @return HasOne<BusinessResearchRun, $this>
+     */
+    public function businessResearchRun(): HasOne
+    {
+        return $this->hasOne(BusinessResearchRun::class);
+    }
+
+    /**
+     * @return HasMany<BusinessResearchSource, $this>
+     */
+    public function businessResearchSources(): HasMany
+    {
+        return $this->hasMany(BusinessResearchSource::class);
+    }
+
+    /**
+     * @return HasOne<BusinessFactRun, $this>
+     */
+    public function businessFactRun(): HasOne
+    {
+        return $this->hasOne(BusinessFactRun::class);
+    }
+
+    /**
+     * @return HasMany<BusinessFact, $this>
+     */
+    public function businessFacts(): HasMany
+    {
+        return $this->hasMany(BusinessFact::class);
     }
 }

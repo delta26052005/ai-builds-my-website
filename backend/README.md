@@ -56,3 +56,23 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Business intelligence engine
+
+The project details page can run public Tavily research and Gemini-backed fact extraction. Configure these values in the backend environment; the API keys are only used by Laravel and are never sent to the browser or included in model prompts:
+
+```dotenv
+TAVILY_API_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
+QUEUE_CONNECTION=database
+```
+
+Apply migrations and run a database queue worker from the `backend` directory:
+
+```powershell
+php artisan migrate
+php artisan queue:work database --timeout=60
+```
+
+Research uses Tavily's public search results and does not directly fetch user-provided URLs. Supplied links remain marked inaccessible unless public Tavily content is returned for them. Uploaded documents and search results are treated as untrusted text; extracted facts remain unverified until the project owner confirms them. OCR, image understanding, and website generation are not included.

@@ -147,4 +147,28 @@ export const api = {
   getProjectSourceContent: async (projectId, sourceId) => (await request(
     `/projects/${projectId}/sources/${sourceId}/extraction/content`,
   )).data,
+  startBusinessResearch: (projectId, refresh = false) => request(
+    `/projects/${projectId}/research`,
+    { method: 'POST', body: { refresh } },
+  ),
+  getBusinessResearchStatus: async (projectId) => (await request(
+    `/projects/${projectId}/research/status`,
+  )).data,
+  listBusinessResearchSources: async (projectId) => (await request(
+    `/projects/${projectId}/research/sources`,
+  )).data,
+  startBusinessFactExtraction: (projectId, refresh = false) => request(
+    `/projects/${projectId}/facts/extract`,
+    { method: 'POST', body: { refresh } },
+  ),
+  getBusinessFactStatus: async (projectId) => (await request(
+    `/projects/${projectId}/facts/status`,
+  )).data,
+  listBusinessFacts: async (projectId) => (await request(
+    `/projects/${projectId}/facts`,
+  )).data,
+  decideBusinessFactCandidate: (projectId, factId, candidateId, action) => request(
+    `/projects/${projectId}/facts/${factId}/candidates/${candidateId}`,
+    { method: 'PATCH', body: { action } },
+  ),
 }

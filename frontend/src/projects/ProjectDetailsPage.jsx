@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ApiError, api } from '../lib/api.js'
+import BusinessIntelligence from './BusinessIntelligence.jsx'
 import ProjectLayout from './ProjectLayout.jsx'
 import SourceManager from './SourceManager.jsx'
 import './Projects.css'
@@ -169,6 +170,7 @@ function ProjectDetailsPage({ projectId, user, onNavigate }) {
             </section>
 
             <SourceManager projectId={project.id} />
+            <BusinessIntelligence projectId={project.id} />
           </>
         )}
       </main>

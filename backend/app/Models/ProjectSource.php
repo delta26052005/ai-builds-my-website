@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ProjectSource extends Model
@@ -31,5 +32,13 @@ class ProjectSource extends Model
     public function extraction(): HasOne
     {
         return $this->hasOne(SourceExtraction::class);
+    }
+
+    /**
+     * @return HasMany<BusinessFactEvidence, $this>
+     */
+    public function factEvidence(): HasMany
+    {
+        return $this->hasMany(BusinessFactEvidence::class);
     }
 }

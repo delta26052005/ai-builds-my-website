@@ -1111,6 +1111,246 @@
   white-space: pre-wrap;
 }
 
+.business-intelligence {
+  display: grid;
+  gap: 16px;
+  margin-top: 17px;
+}
+
+.business-intelligence > .project-panel-heading {
+  margin-bottom: 0;
+}
+
+.business-intelligence .source-help {
+  max-width: 580px;
+  margin: 7px 0 0;
+  color: #858d9b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.intelligence-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #edf0f4;
+  border-radius: 9px;
+  background: #fafbfe;
+}
+
+.intelligence-actions > div {
+  display: grid;
+  gap: 4px;
+}
+
+.intelligence-actions strong,
+.intelligence-sources h3 {
+  color: #414a5b;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.intelligence-actions span,
+.intelligence-actions small {
+  color: #858d9b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.intelligence-actions .button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  font-size: 10px;
+}
+
+.intelligence-sources {
+  display: grid;
+  gap: 9px;
+}
+
+.intelligence-sources h3 {
+  margin: 0;
+}
+
+.intelligence-source {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+}
+
+.intelligence-source-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.intelligence-source-heading strong {
+  overflow: hidden;
+  color: #414a5b;
+  font-size: 11px;
+  text-overflow: ellipsis;
+}
+
+.intelligence-source > a,
+.fact-evidence-list a {
+  overflow-wrap: anywhere;
+  color: #5968cc;
+  font-size: 10px;
+}
+
+.intelligence-source p,
+.intelligence-source small {
+  margin: 0;
+  color: #737b8c;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.intelligence-source-status,
+.fact-status {
+  flex: 0 0 auto;
+  color: #737b8c;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.intelligence-source-status.accessible,
+.fact-status-confirmed {
+  color: #43856a;
+}
+
+.intelligence-source-status.inaccessible,
+.fact-status-rejected {
+  color: #8a91a0;
+}
+
+.fact-status-conflicting {
+  color: #a45b62;
+}
+
+.intelligence-empty {
+  margin: 0;
+  color: #858d9b;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.intelligence-facts {
+  display: grid;
+  gap: 8px;
+}
+
+.intelligence-fact {
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.intelligence-fact > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.intelligence-fact > summary > span:first-of-type {
+  display: inline-grid;
+  gap: 3px;
+}
+
+.intelligence-fact > summary strong {
+  color: #414a5b;
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.intelligence-fact > summary small {
+  color: #8a91a0;
+  font-size: 9px;
+}
+
+.fact-candidates {
+  display: grid;
+  gap: 9px;
+  padding: 0 12px 12px;
+}
+
+.fact-candidate {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #edf0f4;
+  border-radius: 7px;
+  background: #fafbfe;
+}
+
+.fact-candidate-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 9px;
+  color: #414a5b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.fact-candidate > small {
+  color: #8a91a0;
+  font-size: 9px;
+}
+
+.fact-clarification {
+  margin: 0;
+  color: #9a6a22;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.fact-evidence-list {
+  display: grid;
+  gap: 7px;
+}
+
+.fact-evidence-list blockquote {
+  margin: 0;
+  padding: 9px 10px;
+  border-left: 2px solid #cfd4fa;
+  background: #fff;
+}
+
+.fact-evidence-list blockquote p {
+  margin: 0;
+  color: #626b7d;
+  font-size: 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.fact-evidence-list blockquote footer {
+  margin-top: 6px;
+  color: #8a91a0;
+  font-size: 9px;
+  overflow-wrap: anywhere;
+}
+
+.fact-candidate-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fact-candidate-actions .button {
+  min-height: 32px;
+  font-size: 10px;
+}
+
 @media (max-width: 940px) {
   .project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
