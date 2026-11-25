@@ -53,7 +53,7 @@ class WebsiteContentValidator
             'navigation.*.href' => [
                 'required',
                 'string',
-                'in:#hero,#about,#services,#highlights,#gallery,#contact',
+                'in:#hero,#about,#products,#services,#highlights,#gallery,#contact',
             ],
             'hero' => ['required', 'array:heading,description,image,button_text'],
             'hero.heading' => ['required', 'string', 'max:120'],

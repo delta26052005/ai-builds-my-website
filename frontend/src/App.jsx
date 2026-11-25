@@ -5,6 +5,7 @@ import { useAuth } from './auth/useAuth.js'
 import ProjectDashboard from './projects/ProjectDashboard.jsx'
 import ProjectDetailsPage from './projects/ProjectDetailsPage.jsx'
 import ProjectFormPage from './projects/ProjectFormPage.jsx'
+import PublicWebsitePage from './projects/PublicWebsitePage.jsx'
 import './App.css'
 
 function navigate(path) {
@@ -114,6 +115,13 @@ function Redirect({ to }) {
 }
 
 function App() {
+  const pathname = usePathname()
+  const publicWebsite = pathname.match(/^\/sites\/([a-z0-9]+(?:-[a-z0-9]+)*)$/)
+
+  if (publicWebsite) {
+    return <PublicWebsitePage slug={publicWebsite[1]} />
+  }
+
   return (
     <AuthProvider>
       <RoutedApp />

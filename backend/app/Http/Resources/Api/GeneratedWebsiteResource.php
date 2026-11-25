@@ -24,6 +24,9 @@ class GeneratedWebsiteResource extends JsonResource
             'error_code' => $this->error_code,
             'error_message' => $this->error_message,
             'generated_at' => $this->generated_at,
+            'is_published' => $this->is_published,
+            'public_slug' => $this->public_slug,
+            'published_at' => $this->published_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

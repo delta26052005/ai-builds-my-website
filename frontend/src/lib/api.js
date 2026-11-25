@@ -55,13 +55,13 @@ export async function getCsrfCookie() {
   }
 }
 
-async function request(path, { method = 'GET', body } = {}) {
+async function request(path, { method = 'GET', body, credentials = 'include' } = {}) {
   const headers = new Headers({
     Accept: 'application/json',
   })
   const options = {
     method,
-    credentials: 'include',
+    credentials,
     headers,
   }
 
@@ -85,7 +85,7 @@ async function request(path, { method = 'GET', body } = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, options)
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && credentials !== 'omit') {
       window.dispatchEvent(new Event('api:unauthorized'))
     }
 
@@ -174,6 +174,18 @@ export const api = {
   getProjectWebsite: async (projectId) => (await request(
     `/projects/${projectId}/website`,
   )).data,
+  publishProjectWebsite: async (projectId) => (await request(
+    `/projects/${projectId}/website/publish`,
+    { method: 'POST', body: {} },
+  )).data,
+  unpublishProjectWebsite: async (projectId) => (await request(
+    `/projects/${projectId}/website/publish`,
+    { method: 'DELETE' },
+  )).data,
+  getPublicWebsite: async (slug) => (await request(
+    `/public/websites/${encodeURIComponent(slug)}`,
+    { credentials: 'omit' },
+  )).data,
   generateProjectWebsite: async (projectId, templateKey) => (await request(
     `/projects/${projectId}/website/generate`,
     { method: 'POST', body: { template_key: templateKey } },
@@ -207,5 +219,8 @@ export const api = {
   ),
   projectSourceImageUrl: (projectId, sourceId) => (
     `${API_BASE_URL}/projects/${encodeURIComponent(projectId)}/sources/${encodeURIComponent(sourceId)}/image`
+  ),
+  publicWebsiteImageUrl: (slug, sourceId) => (
+    `${API_BASE_URL}/public/websites/${encodeURIComponent(slug)}/images/${encodeURIComponent(sourceId)}`
   ),
 }

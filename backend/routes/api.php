@@ -6,12 +6,18 @@ use App\Http\Controllers\Api\BusinessIntelligenceController;
 use App\Http\Controllers\Api\GeneratedWebsiteController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ProjectSourceController;
+use App\Http\Controllers\Api\PublicWebsiteController;
 use App\Http\Controllers\Api\SourceExtractionController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\WebsiteProjectController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', HealthController::class);
+Route::get('/public/websites/{slug}', [PublicWebsiteController::class, 'show'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*');
+Route::get('/public/websites/{slug}/images/{source}', [PublicWebsiteController::class, 'image'])
+    ->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')
+    ->whereNumber('source');
 
 Route::middleware('throttle:5,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -52,6 +58,10 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
     Route::get('/projects/{project}/website', [GeneratedWebsiteController::class, 'show']);
+    Route::post('/projects/{project}/website/publish', [GeneratedWebsiteController::class, 'publish'])
+        ->middleware('throttle:10,1');
+    Route::delete('/projects/{project}/website/publish', [GeneratedWebsiteController::class, 'unpublish'])
+        ->middleware('throttle:10,1');
     Route::post('/projects/{project}/website/generate', [GeneratedWebsiteController::class, 'generate'])
         ->middleware('throttle:5,1');
     Route::put('/projects/{project}/website', [GeneratedWebsiteController::class, 'update'])

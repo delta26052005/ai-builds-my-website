@@ -50,6 +50,31 @@
   justify-content: flex-end;
 }
 
+.website-publication-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.website-public-link {
+  color: #4354c2;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.website-public-link:hover,
+.website-public-link:focus-visible {
+  color: #293aab;
+  text-decoration: underline;
+}
+
+.website-public-link:focus-visible {
+  outline: 3px solid rgba(86, 105, 218, 0.4);
+  outline-offset: 3px;
+}
+
 .website-builder .button {
   min-height: 38px;
   padding: 0 13px;
@@ -922,6 +947,10 @@
     width: 100%;
     flex-direction: row;
     justify-content: flex-start;
+  }
+
+  .website-publication-actions {
+    width: 100%;
   }
 
   .website-template-picker {

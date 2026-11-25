@@ -19,6 +19,9 @@ class GeneratedWebsite extends Model
         'error_code',
         'error_message',
         'generated_at',
+        'is_published',
+        'public_slug',
+        'published_at',
     ];
 
     protected function casts(): array
@@ -28,6 +31,8 @@ class GeneratedWebsite extends Model
             'current_version' => 'integer',
             'generated_at' => 'datetime',
             'queued_at' => 'datetime',
+            'is_published' => 'boolean',
+            'published_at' => 'datetime',
         ];
     }
 

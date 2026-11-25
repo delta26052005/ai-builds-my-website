@@ -34,6 +34,65 @@ class GeneratedWebsiteController
         ]);
     }
 
+    public function publish(
+        WebsiteProject $project,
+        WebsiteContentValidator $validator,
+    ): GeneratedWebsiteResource {
+        Gate::authorize('update', $project);
+
+        $website = DB::transaction(function () use ($project, $validator): GeneratedWebsite {
+            $lockedProject = WebsiteProject::query()
+                ->lockForUpdate()
+                ->findOrFail($project->id);
+            $website = $lockedProject->generatedWebsite()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($website->content_json === null || $website->current_version < 1) {
+                abort(409, 'Generate a website before publishing it.');
+            }
+
+            $content = $validator->validate($website->content_json);
+            $this->validateGallerySources($lockedProject, $content);
+
+            if (! $website->is_published || blank($website->public_slug)) {
+                $website->update([
+                    'is_published' => true,
+                    'public_slug' => $website->public_slug
+                        ?: $this->uniquePublicSlug($website->title),
+                    'published_at' => now(),
+                ]);
+            }
+
+            return $website->refresh();
+        });
+
+        return new GeneratedWebsiteResource($website);
+    }
+
+    public function unpublish(WebsiteProject $project): GeneratedWebsiteResource
+    {
+        Gate::authorize('update', $project);
+
+        $website = DB::transaction(function () use ($project): GeneratedWebsite {
+            $lockedProject = WebsiteProject::query()
+                ->lockForUpdate()
+                ->findOrFail($project->id);
+            $website = $lockedProject->generatedWebsite()
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $website->update([
+                'is_published' => false,
+                'published_at' => null,
+            ]);
+
+            return $website->refresh();
+        });
+
+        return new GeneratedWebsiteResource($website);
+    }
+
     public function generate(
         StartWebsiteGenerationRequest $request,
         WebsiteProject $project,
@@ -419,5 +478,17 @@ class GeneratedWebsiteController
                 : 'Website generation could not be queued.',
             'data' => (new GeneratedWebsiteResource($website))->resolve(),
         ], $status);
+    }
+
+    private function uniquePublicSlug(string $title): string
+    {
+        $base = Str::slug(mb_substr($title, 0, 140));
+        $base = $base !== '' ? $base : 'business-website';
+
+        do {
+            $slug = $base.'-'.Str::lower(Str::random(10));
+        } while (GeneratedWebsite::query()->where('public_slug', $slug)->exists());
+
+        return $slug;
     }
 }

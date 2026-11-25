@@ -1,0 +1,55 @@
+.public-website-shell {
+  min-height: 100vh;
+  padding: 0;
+  background: #fff;
+}
+
+.public-website-shell .website-preview-public {
+  width: 100%;
+  max-height: none;
+  min-height: 100vh;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.public-website-shell .website-preview-public .website-preview-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.public-website-shell .website-preview-public .website-preview-anchor,
+.public-website-shell .website-preview-public main > section {
+  scroll-margin-top: 100px;
+}
+
+.public-website-status {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: #263248;
+  background: #f5f7fb;
+  text-align: center;
+}
+
+.public-website-status p {
+  margin: 0;
+}
+
+.public-website-error {
+  max-width: 32rem;
+  padding: 2rem;
+  border: 1px solid #dfe5ef;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.public-website-error h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
