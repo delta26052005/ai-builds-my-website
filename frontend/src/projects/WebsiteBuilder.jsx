@@ -39,9 +39,19 @@ function messageFor(error, fallback) {
     return fallback
   }
 
-  const validationMessage = Object.values(error.errors || {})
-    .flat()
-    .find((message) => typeof message === 'string' && message.length > 0)
+  const [field, messages] = Object.entries(error.errors || {})
+    .map(([key, value]) => [
+      key.replace(/^content_json\./, ''),
+      Array.isArray(value)
+        ? value.find((message) => typeof message === 'string' && message.length > 0)
+        : typeof value === 'string' ? value : null,
+    ])
+    .find(([, message]) => typeof message === 'string' && message.length > 0) || []
+  const validationMessage = messages
+
+  if (validationMessage && field && !validationMessage.toLowerCase().includes(field.toLowerCase())) {
+    return `${field.replace(/\.(\d+)\./g, ' item $1 ').replace(/\./g, ' ')}: ${validationMessage}`
+  }
 
   return validationMessage || error.message || fallback
 }
@@ -51,6 +61,172 @@ function safeColor(value, fallback) {
     && /^#[\da-f]{6}$/i.test(value)
     ? value
     : fallback
+}
+
+function editorValue(item, keys, fallback = '') {
+  if (!item || typeof item !== 'object') {
+    return fallback
+  }
+
+  const values = keys
+    .map((key) => item[key])
+    .filter((value) => value !== undefined && value !== null)
+
+  return values.find((value) => typeof value !== 'string' || value.trim() !== '')
+    ?? values[0]
+    ?? fallback
+}
+
+function isBlankEditorValue(value) {
+  return value === undefined
+    || value === null
+    || (typeof value === 'string' && value.trim() === '')
+}
+
+function nullableEditorText(value) {
+  return isBlankEditorValue(value) ? null : value
+}
+
+function navigationAnchor(label, href) {
+  const normalizedLabel = typeof label === 'string'
+    ? label.trim().toLowerCase().replace(/[&/]/g, ' and ').replace(/\s+/g, ' ')
+    : ''
+  const labelAnchors = {
+    about: '#about',
+    'about us': '#about',
+    home: '#hero',
+    highlights: '#highlights',
+    products: '#products',
+    product: '#products',
+    services: '#products',
+    service: '#products',
+    'products and services': '#products',
+    'services and products': '#products',
+    gallery: '#gallery',
+    contact: '#contact',
+    'get in touch': '#contact',
+  }
+  const labelAnchor = Object.prototype.hasOwnProperty.call(labelAnchors, normalizedLabel)
+    ? labelAnchors[normalizedLabel]
+    : null
+
+  if (labelAnchor) {
+    return labelAnchor
+  }
+
+  const anchor = safeAnchor(href)
+  return anchor === '#services' ? '#products' : anchor
+}
+
+function normalizeWebsitePayload(website) {
+  const navigation = (Array.isArray(website.navigation) ? website.navigation : [])
+    .map((item) => {
+      const label = typeof item === 'string'
+        ? item
+        : editorValue(item, ['label', 'title', 'name', 'text'])
+      const href = navigationAnchor(
+        label,
+        editorValue(item, ['href', 'anchor', 'link'], '#hero'),
+      )
+
+      return { label, href }
+    })
+    .filter((item) => !isBlankEditorValue(item.label) || item.href !== '#hero')
+  const services = (Array.isArray(website.services_or_products)
+    ? website.services_or_products
+    : [])
+    .map((item) => ({
+      name: typeof item === 'string'
+        ? item
+        : editorValue(item, ['name', 'title']),
+      description: nullableEditorText(editorValue(item, ['description', 'text'], null)),
+    }))
+    .filter((item) => (
+      !isBlankEditorValue(item.name) || !isBlankEditorValue(item.description)
+    ))
+  const highlights = (Array.isArray(website.highlights) ? website.highlights : [])
+    .map((item) => typeof item === 'string'
+      ? item
+      : editorValue(item, ['text', 'label', 'title']))
+    .filter((item) => !isBlankEditorValue(item))
+  const gallery = (Array.isArray(website.gallery) ? website.gallery : [])
+    .map((item) => {
+      const sourceId = item?.source_id
+
+      return {
+        image_url: nullableEditorText(typeof item === 'string'
+          ? item
+          : editorValue(item, ['image_url', 'image', 'url'], null)),
+        alt: typeof item === 'string'
+          ? ''
+          : editorValue(item, ['alt', 'caption', 'title', 'name', 'label', 'heading', 'text']),
+        ...(!isBlankEditorValue(sourceId) ? { source_id: sourceId } : {}),
+      }
+    })
+    .filter((item) => (
+      !isBlankEditorValue(item.image_url)
+      || !isBlankEditorValue(item.alt)
+      || !isBlankEditorValue(item.source_id)
+    ))
+  const contact = website.contact && typeof website.contact === 'object'
+    ? website.contact
+    : {}
+  const socialLinks = (Array.isArray(contact.social_links) ? contact.social_links : [])
+    .map((item) => ({
+      label: typeof item === 'string'
+        ? item
+        : editorValue(item, ['label', 'platform', 'name', 'title']),
+      url: typeof item === 'string'
+        ? ''
+        : editorValue(item, ['url', 'href', 'link']),
+    }))
+    .filter((item) => (
+      !isBlankEditorValue(item.label) || !isBlankEditorValue(item.url)
+    ))
+  const theme = website.theme && typeof website.theme === 'object' ? website.theme : {}
+  const hero = website.hero && typeof website.hero === 'object' ? website.hero : {}
+  const about = website.about && typeof website.about === 'object' ? website.about : {}
+  const footer = website.footer && typeof website.footer === 'object' ? website.footer : {}
+
+  return {
+    business_name: website.business_name ?? '',
+    tagline: nullableEditorText(website.tagline),
+    template_key: website.template_key ?? 'modern_business',
+    theme: {
+      primary_color: theme.primary_color ?? '',
+      secondary_color: theme.secondary_color ?? '',
+      font_style: theme.font_style ?? '',
+    },
+    navigation,
+    hero: {
+      heading: hero.heading ?? '',
+      description: nullableEditorText(hero.description),
+      image: nullableEditorText(hero.image),
+      button_text: nullableEditorText(hero.button_text),
+    },
+    about: {
+      heading: about.heading ?? '',
+      description: nullableEditorText(about.description),
+    },
+    services_or_products: services,
+    highlights,
+    gallery,
+    contact: {
+      address: nullableEditorText(contact.address),
+      phone: nullableEditorText(contact.phone),
+      email: nullableEditorText(contact.email),
+      social_links: socialLinks,
+    },
+    footer: {
+      copyright_text: nullableEditorText(footer.copyright_text),
+      show_business_name: footer.show_business_name ?? true,
+    },
+    content_provenance: website.content_provenance
+      && typeof website.content_provenance === 'object'
+      && !Array.isArray(website.content_provenance)
+      ? website.content_provenance
+      : {},
+  }
 }
 
 function normalizeWebsite(value, project) {
@@ -73,7 +249,6 @@ function normalizeWebsite(value, project) {
       provenance[path] = 'legacy_unclassified'
     }
   }
-
   markUnclassified('business_name', raw.business_name)
   markUnclassified('tagline', raw.tagline)
   markUnclassified('hero.heading', hero.heading)
@@ -118,8 +293,10 @@ function normalizeWebsite(value, project) {
     },
     navigation: Array.isArray(raw.navigation)
       ? raw.navigation.map((item) => ({
-        label: field(item || {}, 'label'),
-        href: safeAnchor(field(item || {}, 'href', '#hero')),
+        label: typeof item === 'string'
+          ? item
+          : editorValue(item, ['label', 'title', 'name', 'text']),
+        href: safeAnchor(editorValue(item, ['href', 'anchor', 'link'], '#hero')),
       }))
       : [],
     hero: {
@@ -134,8 +311,8 @@ function normalizeWebsite(value, project) {
     },
     services_or_products: Array.isArray(raw.services_or_products)
       ? raw.services_or_products.map((item) => ({
-        name: field(item || {}, 'name', typeof item === 'string' ? item : ''),
-        description: field(item || {}, 'description'),
+        name: typeof item === 'string' ? item : editorValue(item, ['name', 'title']),
+        description: editorValue(item, ['description', 'text']),
       }))
       : [],
     highlights: Array.isArray(raw.highlights)
@@ -143,8 +320,11 @@ function normalizeWebsite(value, project) {
       : [],
     gallery: Array.isArray(raw.gallery)
       ? raw.gallery.map((item) => ({
-        image_url: field(item || {}, 'image_url'),
-        alt: field(item || {}, 'alt'),
+        image_url: typeof item === 'string' ? item : editorValue(item, ['image_url', 'image', 'url']),
+        alt: typeof item === 'string' ? '' : editorValue(item, ['alt', 'caption', 'title', 'name', 'label', 'heading', 'text']),
+        ...(Number.isSafeInteger(Number(item?.source_id)) && Number(item.source_id) > 0
+          ? { source_id: Number(item.source_id) }
+          : {}),
       }))
       : [],
     contact: {
@@ -153,8 +333,12 @@ function normalizeWebsite(value, project) {
       email: field(contact, 'email', project.business_email || ''),
       social_links: Array.isArray(contact.social_links)
         ? contact.social_links.map((item) => ({
-          label: field(item || {}, 'label', field(item || {}, 'platform')),
-          url: field(item || {}, 'url'),
+          label: typeof item === 'string'
+            ? item
+            : editorValue(item, ['label', 'platform', 'name', 'title']),
+          url: typeof item === 'string'
+            ? ''
+            : editorValue(item, ['url', 'href', 'link']),
         }))
         : [],
     },
@@ -271,8 +455,31 @@ function linkOf(item) {
 }
 
 function safeAnchor(value) {
-  const anchors = ['#hero', '#about', '#services', '#highlights', '#gallery', '#contact']
+  const anchors = ['#hero', '#about', '#products', '#services', '#highlights', '#gallery', '#contact']
   return anchors.includes(value) ? value : '#hero'
+}
+
+function previewAnchor(value) {
+  const anchor = safeAnchor(value)
+  return anchor === '#services' ? '#products' : anchor
+}
+
+function handlePreviewNavigation(event, publicSlug) {
+  const href = event.currentTarget.getAttribute('href')
+  const preview = event.currentTarget.closest('.website-preview')
+  const target = href ? preview?.querySelector(href) : null
+
+  event.preventDefault()
+
+  if (!target) {
+    return
+  }
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  if (publicSlug) {
+    window.history.replaceState(null, '', href)
+  }
 }
 
 function safeExternalHref(value) {
@@ -438,8 +645,10 @@ function CollectionEditor({ label, mode, items, onChange, provenance = {} }) {
                   value={safeAnchor(linkOf(item))}
                   onChange={(event) => updateEntry(index, field, event.target.value)}
                 >
-                  {['#hero', '#about', '#services', '#highlights', '#gallery', '#contact'].map((anchor) => (
-                    <option value={anchor} key={anchor}>{anchor.slice(1)}</option>
+                  {['#hero', '#about', '#products', '#services', '#highlights', '#gallery', '#contact'].map((anchor) => (
+                    <option value={anchor} key={anchor}>
+                      {anchor === '#products' ? 'products / services' : anchor.slice(1)}
+                    </option>
                   ))}
                 </select>
               ) : (
@@ -473,7 +682,7 @@ function CollectionEditor({ label, mode, items, onChange, provenance = {} }) {
   )
 }
 
-function WebsitePreview({ website, projectId }) {
+export function WebsitePreview({ website, projectId, publicSlug }) {
   const isLocal = website.template_key === 'local_business'
   const templateClass = isLocal ? 'website-preview-local' : 'website-preview-modern'
   const fontFamily = {
@@ -492,12 +701,18 @@ function WebsitePreview({ website, projectId }) {
   const highlights = website.highlights
 
   return (
-    <div className={`website-preview ${templateClass}`} style={themeStyle}>
+    <div className={`website-preview ${templateClass} ${publicSlug ? 'website-preview-public' : ''}`} style={themeStyle}>
       <header className="website-preview-header">
         <strong>{website.business_name || 'Your business'}</strong>
-        <nav aria-label="Website preview navigation">
+        <nav aria-label="Website navigation">
           {website.navigation.map((item, index) => (
-            <a href={safeAnchor(linkOf(item))} key={`nav-${index}`}>{titleOf(item, 'navigation')}</a>
+            <a
+              href={previewAnchor(linkOf(item))}
+              key={`nav-${index}`}
+              onClick={(event) => handlePreviewNavigation(event, publicSlug)}
+            >
+              {titleOf(item, 'navigation')}
+            </a>
           ))}
         </nav>
         {website.contact.phone && <span className="website-preview-phone">{website.contact.phone}</span>}
@@ -535,9 +750,9 @@ function WebsitePreview({ website, projectId }) {
           {website.about.description && <p>{website.about.description}</p>}
         </section>
 
-        {services.length === 0 && <span id="services" className="website-preview-anchor" />}
+        {services.length === 0 && <span id="products" className="website-preview-anchor" />}
         {services.length > 0 && (
-          <section className="website-preview-services" id="services">
+          <section className="website-preview-services" id="products">
             <div className="website-preview-section-title">
               <p className="website-preview-kicker">Services &amp; products</p>
               <h2>What we offer</h2>
@@ -563,7 +778,11 @@ function WebsitePreview({ website, projectId }) {
             </div>
             <div className="website-preview-gallery-grid">
               {gallery.map((item, index) => {
-                const image = imageSourceOf(item, projectId)
+                const image = publicSlug
+                  && Number.isSafeInteger(Number(item?.source_id))
+                  && Number(item.source_id) > 0
+                  ? api.publicWebsiteImageUrl(publicSlug, Number(item.source_id))
+                  : imageSourceOf(item, projectId)
                 return (
                   <figure key={`gallery-${index}`} className={image ? '' : 'is-missing'}>
                     {image
@@ -572,7 +791,7 @@ function WebsitePreview({ website, projectId }) {
                           <img
                             src={image}
                             alt={altOf(item)}
-                            crossOrigin={item?.source_id ? 'use-credentials' : undefined}
+                            crossOrigin={!publicSlug && item?.source_id ? 'use-credentials' : undefined}
                             onError={(event) => event.currentTarget.parentElement?.classList.add('is-missing')}
                           />
                           <div className="website-preview-gallery-placeholder" aria-hidden="true">✦</div>
@@ -916,7 +1135,7 @@ function WebsiteBuilder({ project }) {
 
     try {
       const currentVersion = Number(websiteRecord?.current_version)
-      const result = await api.updateProjectWebsite(project.id, website, {
+      const result = await api.updateProjectWebsite(project.id, normalizeWebsitePayload(website), {
         changeSummary: 'Website content updated',
         ...(Number.isSafeInteger(currentVersion) && currentVersion > 0
           ? { expectedVersion: currentVersion }
@@ -949,6 +1168,42 @@ function WebsiteBuilder({ project }) {
         type: 'error',
         message: messageFor(requestError, 'We couldn’t save your website changes. Please try again.'),
         key: 'website-save-error',
+      })
+    } finally {
+      setAction('')
+    }
+  }
+
+  async function updatePublication(publish) {
+    const publicationAction = publish ? 'publish' : 'unpublish'
+    setAction(publicationAction)
+    setError('')
+    setNotice('')
+
+    try {
+      const result = publish
+        ? await api.publishProjectWebsite(project.id)
+        : await api.unpublishProjectWebsite(project.id)
+      setWebsiteRecord(result)
+      const message = publish
+        ? 'Your website is now published.'
+        : 'Your website is no longer public.'
+      setNotice(message)
+      notify({
+        type: 'success',
+        message,
+        key: `website-${publicationAction}-${result?.public_slug}-${result?.published_at || 'private'}`,
+      })
+    } catch (requestError) {
+      const message = messageFor(
+        requestError,
+        publish ? 'We couldn’t publish your website.' : 'We couldn’t unpublish your website.',
+      )
+      setError(message)
+      notify({
+        type: 'error',
+        message,
+        key: `website-${publicationAction}-error-${project.id}`,
       })
     } finally {
       setAction('')
@@ -1203,6 +1458,36 @@ function WebsiteBuilder({ project }) {
           <p className="project-section-copy">Changes stay in your project until you save them.</p>
         </div>
         <div className="website-builder-actions">
+          {websiteRecord?.is_published ? (
+            <div className="website-publication-actions">
+              <a
+                className="website-public-link"
+                href={`${window.location.origin}/sites/${encodeURIComponent(websiteRecord.public_slug)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View published site
+              </a>
+              <button
+                type="button"
+                className="button button-quiet"
+                onClick={() => updatePublication(false)}
+                disabled={Boolean(action)}
+              >
+                {action === 'unpublish' ? 'Unpublishing…' : 'Unpublish'}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="button button-quiet"
+              onClick={() => updatePublication(true)}
+              disabled={Boolean(action) || isGenerating || hasChanges}
+              title={hasChanges ? 'Save your edits before publishing.' : undefined}
+            >
+              {action === 'publish' ? 'Publishing…' : 'Publish website'}
+            </button>
+          )}
           <button
             type="button"
             className="button button-quiet"
