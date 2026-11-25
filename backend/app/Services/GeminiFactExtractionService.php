@@ -3,14 +3,13 @@
 namespace App\Services;
 
 use App\Models\WebsiteProject;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use JsonException;
 
 class GeminiFactExtractionService
 {
     private const MAX_FACTS = 100;
+
+    public function __construct(private readonly GeminiJsonClient $client) {}
 
     /**
      * @param  list<array<string, string|null>>  $sources
@@ -23,23 +22,6 @@ class GeminiFactExtractionService
     ): array {
         if ($sources === []) {
             return [];
-        }
-
-        $apiKey = config('services.gemini.api_key');
-        $model = config('services.gemini.model');
-
-        if (! is_string($apiKey) || trim($apiKey) === '') {
-            throw new ProviderException(
-                'provider_not_configured',
-                'Fact extraction is not configured. Add a Gemini API key on the server.',
-            );
-        }
-
-        if (! is_string($model) || ! preg_match('/^[a-zA-Z0-9._-]{1,100}$/', $model)) {
-            throw new ProviderException(
-                'invalid_provider_configuration',
-                'The configured Gemini model name is invalid.',
-            );
         }
 
         $systemInstruction = <<<'PROMPT'
@@ -71,78 +53,11 @@ PROMPT;
             );
         }
 
-        try {
-            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])
-                ->acceptJson()
-                ->connectTimeout(5)
-                ->timeout(35)
-                ->post(
-                    'https://generativelanguage.googleapis.com/v1beta/models/'.rawurlencode($model).':generateContent',
-                    [
-                        'systemInstruction' => [
-                            'parts' => [['text' => $systemInstruction]],
-                        ],
-                        'contents' => [[
-                            'role' => 'user',
-                            'parts' => [['text' => $sourceJson]],
-                        ]],
-                        'generationConfig' => [
-                            'responseMimeType' => 'application/json',
-                            'temperature' => 0.1,
-                            'maxOutputTokens' => 8192,
-                        ],
-                    ],
-                );
-        } catch (ConnectionException) {
-            throw new ProviderException(
-                'provider_timeout',
-                'Fact extraction could not reach Gemini. Please try again.',
-            );
-        }
-
-        if ($response->status() === 401 || $response->status() === 403) {
-            throw new ProviderException(
-                'invalid_provider_key',
-                'Fact extraction could not authenticate with Gemini.',
-            );
-        }
-
-        if ($response->status() === 429) {
-            throw new ProviderException(
-                'provider_rate_limited',
-                'Gemini is temporarily rate-limiting requests. Please try again later.',
-            );
-        }
-
-        if (! $response->successful()) {
-            Log::warning('Gemini API request failed.', [
-                'http_status' => $response->status(),
-                'provider_status' => $response->json('error.status'),
-            ]);
-
-            throw new ProviderException(
-                'provider_unavailable',
-                'Gemini is temporarily unavailable. Please try again later.',
-            );
-        }
-
-        $text = $response->json('candidates.0.content.parts.0.text');
-
-        if (! is_string($text)) {
-            throw new ProviderException(
-                'invalid_model_response',
-                'Gemini returned a response that could not be validated.',
-            );
-        }
-
-        try {
-            $decoded = json_decode($text, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new ProviderException(
-                'invalid_model_response',
-                'Gemini returned malformed structured data.',
-            );
-        }
+        $decoded = $this->client->generateJson(
+            $systemInstruction,
+            $sourceJson,
+            taskName: 'Fact extraction',
+        );
 
         if (! is_array($decoded)
             || ! isset($decoded['facts'])

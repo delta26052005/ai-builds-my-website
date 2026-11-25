@@ -171,4 +171,41 @@ export const api = {
     `/projects/${projectId}/facts/${factId}/candidates/${candidateId}`,
     { method: 'PATCH', body: { action } },
   ),
+  getProjectWebsite: async (projectId) => (await request(
+    `/projects/${projectId}/website`,
+  )).data,
+  generateProjectWebsite: async (projectId, templateKey) => (await request(
+    `/projects/${projectId}/website/generate`,
+    { method: 'POST', body: { template_key: templateKey } },
+  )).data,
+  updateProjectWebsite: async (projectId, contentJson, options = {}) => (await request(
+    `/projects/${projectId}/website`,
+    {
+      method: 'PUT',
+      body: {
+        content_json: contentJson,
+        ...(options.changeSummary ? { change_summary: options.changeSummary } : {}),
+        ...(options.expectedVersion !== undefined
+          ? { expected_version: options.expectedVersion }
+          : {}),
+      },
+    },
+  )).data,
+  regenerateProjectWebsiteSection: async (projectId, section) => (await request(
+    `/projects/${projectId}/website/regenerate-section`,
+    { method: 'POST', body: { section } },
+  )).data,
+  listProjectWebsiteRevisions: async (projectId) => (await request(
+    `/projects/${projectId}/website/revisions`,
+  )).data,
+  getProjectWebsiteRevision: async (projectId, revisionId) => (await request(
+    `/projects/${projectId}/website/revisions/${encodeURIComponent(revisionId)}`,
+  )).data,
+  deleteProjectWebsiteRevision: (projectId, revisionId) => request(
+    `/projects/${projectId}/website/revisions/${encodeURIComponent(revisionId)}`,
+    { method: 'DELETE' },
+  ),
+  projectSourceImageUrl: (projectId, sourceId) => (
+    `${API_BASE_URL}/projects/${encodeURIComponent(projectId)}/sources/${encodeURIComponent(sourceId)}/image`
+  ),
 }

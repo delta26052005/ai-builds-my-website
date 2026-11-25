@@ -80,4 +80,12 @@ class WebsiteProject extends Model
     {
         return $this->hasMany(BusinessFact::class);
     }
+
+    /**
+     * @return HasOne<GeneratedWebsite, $this>
+     */
+    public function generatedWebsite(): HasOne
+    {
+        return $this->hasOne(GeneratedWebsite::class);
+    }
 }

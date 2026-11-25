@@ -32,6 +32,30 @@ class ProjectSourceController
         );
     }
 
+    public function image(WebsiteProject $project, ProjectSource $source)
+    {
+        Gate::authorize('view', $project);
+        $source = $project->sources()->findOrFail($source->getKey());
+
+        abort_unless(
+            in_array($source->mime_type, ['image/jpeg', 'image/png', 'image/webp'], true),
+            404,
+        );
+
+        $disk = Storage::disk(self::DISK);
+        abort_unless($disk->exists($source->stored_path), 404);
+
+        return $disk->response(
+            $source->stored_path,
+            'project-image',
+            [
+                'Cache-Control' => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
+            ],
+            'inline',
+        );
+    }
+
     public function store(
         StoreProjectSourcesRequest $request,
         WebsiteProject $project,

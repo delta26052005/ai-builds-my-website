@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessFactDecisionController;
 use App\Http\Controllers\Api\BusinessIntelligenceController;
+use App\Http\Controllers\Api\GeneratedWebsiteController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ProjectSourceController;
 use App\Http\Controllers\Api\SourceExtractionController;
@@ -27,6 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{project}/sources', [ProjectSourceController::class, 'index']);
     Route::post('/projects/{project}/sources', [ProjectSourceController::class, 'store']);
     Route::delete('/projects/{project}/sources/{source}', [ProjectSourceController::class, 'destroy']);
+    Route::get('/projects/{project}/sources/{source}/image', [ProjectSourceController::class, 'image'])
+        ->name('projects.sources.image');
 
     Route::get('/projects/{project}/extractions', [SourceExtractionController::class, 'index']);
     Route::post('/projects/{project}/sources/{source}/process', [SourceExtractionController::class, 'process'])
@@ -47,4 +50,21 @@ Route::middleware('auth:sanctum')->group(function () {
         '/projects/{project}/facts/{fact}/candidates/{candidate}',
         [BusinessFactDecisionController::class, 'update'],
     );
+
+    Route::get('/projects/{project}/website', [GeneratedWebsiteController::class, 'show']);
+    Route::post('/projects/{project}/website/generate', [GeneratedWebsiteController::class, 'generate'])
+        ->middleware('throttle:5,1');
+    Route::put('/projects/{project}/website', [GeneratedWebsiteController::class, 'update'])
+        ->middleware('throttle:20,1');
+    Route::post('/projects/{project}/website/regenerate-section', [GeneratedWebsiteController::class, 'regenerateSection'])
+        ->middleware('throttle:5,1');
+    Route::get('/projects/{project}/website/revisions', [GeneratedWebsiteController::class, 'revisions']);
+    Route::get(
+        '/projects/{project}/website/revisions/{revision}',
+        [GeneratedWebsiteController::class, 'revision'],
+    )->whereNumber('revision');
+    Route::delete(
+        '/projects/{project}/website/revisions/{revision}',
+        [GeneratedWebsiteController::class, 'destroyRevision'],
+    )->whereNumber('revision');
 });

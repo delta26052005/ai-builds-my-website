@@ -3,6 +3,7 @@ import { ApiError, api } from '../lib/api.js'
 import BusinessIntelligence from './BusinessIntelligence.jsx'
 import ProjectLayout from './ProjectLayout.jsx'
 import SourceManager from './SourceManager.jsx'
+import WebsiteBuilder from './WebsiteBuilder.jsx'
 import './Projects.css'
 
 const SOCIAL_LABELS = {
@@ -170,6 +171,7 @@ function ProjectDetailsPage({ projectId, user, onNavigate }) {
             </section>
 
             <SourceManager projectId={project.id} />
+            <WebsiteBuilder project={project} />
             <BusinessIntelligence projectId={project.id} />
           </>
         )}
