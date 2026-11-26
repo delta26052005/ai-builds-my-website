@@ -1,19 +1,89 @@
 # AI Builds My Website
 
-AI Builds My Website turns a business owner's project details and confirmed business facts into an editable, single-page website. The monorepo contains a Laravel REST API and a separate React/Vite frontend.
+AI Builds My Website is an AI-powered website builder that transforms a business owner's information, documents, links and confirmed business facts into an editable, single-page website.
+
+Built using Laravel, React, Vite and MySQL.
+
+## Screenshots
+
+### 1. Login
+
+![Login](docs/screenshots/login.png)
+
+### 2. Dashboard
+
+![Dashboard](docs/screenshots/new%20Dashboard.png)
+
+### 3. Business Projects
+
+![Business Projects](docs/screenshots/business%20projects.png)
+
+### 4. AI Business Research
+
+![AI Search](docs/screenshots/Ai%20search.png)
+
+### 5. Fact Extraction and Verification
+
+![Extract Facts](docs/screenshots/Extract%20Facts.png)
+
+### 6. Website Builder and Editing
+
+![Website New Version](docs/screenshots/website%20new%20version.png)
+
+### 7. Publishing Website
+
+![Publish Website](docs/screenshots/Publish%20Website.png)
+
+### 8. Published Website
+
+![Published Website](docs/screenshots/published%20website.png)
+
+### 9. Unpublishing Website
+
+![Unpublish Website](docs/screenshots/unpublish%20website.png)
+
+## Key Features
+
+- Business project creation and management.
+- PDF document upload and text extraction.
+- Business research using Tavily.
+- AI-powered fact extraction using Google Gemini.
+- Evidence-based fact review and owner confirmation.
+- Conflict handling for candidate business information.
+- AI-powered single-page website generation.
+- Website editing and individual section regeneration.
+- Website revision management.
+- Public website publishing and unpublishing.
+- Predefined React website templates.
+- Private source document storage and controlled public image access.
+
+## Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Laravel 13, PHP 8.3 |
+| Frontend | React, Vite |
+| Database | MySQL 8+ |
+| Authentication | Laravel Sanctum |
+| AI | Google Gemini |
+| Web Research | Tavily |
+| PDF Extraction | PHP PDF Parser |
+| Background Jobs | Laravel Database Queue |
+| API | REST API |
 
 ## Requirements
 
 - PHP 8.3 and Composer
 - MySQL 8+
 - Node.js and npm
-- A Tavily API key for web research and a Gemini API key for fact extraction and website generation (optional for local development)
+- Tavily API key for web research
+- Gemini API key for AI features
 
-## Local setup
+## Local Setup
 
-### 1. Configure the Laravel API
+### Backend Setup
 
-Create a MySQL database, then from `backend/`:
+Navigate to the `backend` directory:
 
 ```powershell
 Copy-Item .env.example .env
@@ -21,76 +91,118 @@ composer install
 php artisan key:generate
 ```
 
-Set `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` in `backend/.env` to match your local MySQL account. Add provider credentials only to this server-side file when you want to use research and AI features:
+Configure your MySQL credentials and API keys in `backend/.env`.
 
 ```dotenv
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ai_website_builder
+DB_USERNAME=root
+DB_PASSWORD=
+
 TAVILY_API_KEY=
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-Do not put provider keys in frontend environment variables. `.env` is local and must not be committed.
-
-Apply the schema and start the API and database queue worker in separate terminals:
+Apply database migrations:
 
 ```powershell
 php artisan migrate
+```
+
+Start the Laravel server:
+
+```powershell
 php artisan serve --host=localhost --port=8000
 ```
+
+Start the queue worker in another terminal:
 
 ```powershell
 php artisan queue:work database --timeout=60
 ```
 
-The queue worker is required for source extraction, business research, fact extraction, and website generation.
+### Frontend Setup
 
-### 2. Start the React frontend
-
-From `frontend/`:
+Navigate to the `frontend` directory:
 
 ```powershell
 npm install
-npm run dev -- --host localhost --port 5174
+npm run dev
 ```
 
-Open the Vite URL in a browser. The frontend defaults to the API at `http://localhost:8000/api`; set `VITE_API_BASE_URL` only if your Laravel API uses another address. Laravel CORS defaults permit `http://localhost:5174` and `http://127.0.0.1:5174`.
+Open the Vite development URL in your browser.
 
-## Application workflow
+The frontend communicates with the Laravel API at `http://localhost:8000/api`.
 
-1. Register and create a business project.
-2. Add project documents, images, website/social links, and available business details.
-3. Run research and fact extraction. Accessible research and uploaded source content are treated as untrusted; inaccessible sources are not represented as retrieved content.
-4. Review evidence and explicitly confirm facts. Only confirmed facts are used as factual inputs to website generation.
-5. Generate a website using `modern_business` or `local_business`, edit its structured content, and save revisions.
-6. Publish from the Website Builder. The public URL is `/sites/{slug}` on the frontend origin. Publishing does not create a new generated version; unpublishing immediately makes the public page and its gallery image URLs return 404.
+## Application Workflow
 
-Public website reads do not require a login and expose only the current published website content. Uploaded files remain private. An uploaded image is served publicly only when its source ID is included in the currently published website gallery; PDFs and other project sources are never exposed by the public image endpoint. Public responses are sent with `Cache-Control: no-store`.
+1. Register and log in.
+2. Create a business project.
+3. Add business details, links and source documents.
+4. Extract information from uploaded PDFs.
+5. Research the business using Tavily.
+6. Extract candidate facts using Gemini.
+7. Review evidence and confirm or reject facts.
+8. Generate a website using confirmed business information.
+9. Edit website sections and save revisions.
+10. Publish the website using a public URL.
 
-The website is rendered from a fixed JSON schema through the two predefined React templates. Generated HTML and JavaScript are never executed. AI-generated copy is identified as unverified, and owners should review it before publishing.
+## Data Safety
 
-## Useful commands
+- Extracted information is treated as candidate information, not automatically verified.
+- Sources and evidence are maintained for fact review.
+- Conflicting information is presented for owner verification.
+- Uploaded documents and external content are treated as untrusted input.
+- Generated HTML and JavaScript are never executed.
+- Websites are rendered using predefined React templates.
+- Uploaded source documents remain private.
+- Public website content is available only after publishing.
 
-Run backend commands from `backend/` and frontend commands from `frontend/`.
+## Useful Commands
+
+Backend:
 
 ```powershell
 php artisan test
 vendor/bin/pint --test
+```
+
+Frontend:
+
+```powershell
 npm run lint
 npm run build
 ```
 
-The PHP commands are run from `backend/`; the npm commands are run from `frontend/`.
-
-## API overview
-
-All API paths are under `/api`. Authentication uses Laravel Sanctum SPA sessions. Project and website management endpoints require an authenticated project owner. Public read endpoints are intentionally unauthenticated:
+## Repository Structure
 
 ```text
-GET    /api/public/websites/{slug}
-GET    /api/public/websites/{slug}/images/{source}
-
-POST   /api/projects/{project}/website/publish
-DELETE /api/projects/{project}/website/publish
+ai-builds-my-website/
+├── backend/
+├── frontend/
+├── docs/
+│   └── screenshots/
+│       ├── Dashboard.png
+│       ├── login.png
+│       ├── business projects.png
+│       ├── Ai search.png
+│       ├── Extract Facts.png
+│       ├── Publish Website.png
+│       ├── published website.png
+│       ├── unpublish website.png
+│       ├── website new version.png
+│       ├── Delete version.png
+│       ├── Delete Draft.png
+│       └── new Dashboard.png
+├── DECISIONS.md
+└── README.md
 ```
 
-See [backend/README.md](./backend/README.md) for backend endpoints, queue behavior, and data-safety details.
+## Project Decisions
+
+See [DECISIONS.md](./DECISIONS.md) for architectural decisions, scope trade-offs and future improvements.
+
+For backend API documentation and additional technical details, see [backend/README.md](./backend/README.md).
